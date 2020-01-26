@@ -112,3 +112,108 @@ function momsSpagetti(lyrics) {
 }
 
 // REFACTORED VERSION HERE //
+//1. First Approach
+
+//HELPER FUNCTION FILE: Creating helper function to add refrains
+const refrainAdder = (refrain, refrainRepeatTimes) => {
+  let n = 0;
+  let refrainStr = "";
+  while (n < refrainRepeatTimes) {
+    //Replacing the spaces with <br> tag to get desired output style
+    refrainStr += refrain.replace(/ {2}/g, "<br>");
+    refrainStr += "<br/><br/>";
+    n++;
+  }
+  return refrainStr;
+};
+
+const lyricsGenerator = lyrics => {
+  return new Promise((resolve, reject) => {
+    //Please change the boolean value to reject the value.
+    //While mimicking the api calls  - "error" can be replaced with ths status code. For eg status code of 200 or "OK" from 
+    //google maps API. 
+    let error = false;
+    let chorus = lyrics.intro.replace(/ {2}/g, "<br>");
+    chorus += "<br/><br/>";
+    //Looping over chorus array and simulraneously adding refrains using helper function.
+    for (let i = 0; i < lyrics.choruses.length; i++) {
+      chorus += lyrics.choruses[i].chorus.replace(/ {6}/g, "<br/>");
+      chorus += "<br/><br/>";
+      chorus += refrainAdder(lyrics.refrain, lyrics.refrainRepeat);
+    }
+    chorus += lyrics.ending;
+    if (!error) {
+      resolve(chorus);
+    } else {
+      reject("Error: Could not generate the lyrics");
+    }
+  });
+};
+
+//Output the result on DOM.
+lyricsGenerator(lyrics)
+  .then(response => (document.body.innerHTML = response))
+  .catch(error => (document.body.innerHTML = error));
+
+
+//2. Second Approach
+// Assuming getting lyrics' intro, body and ending using 3 different APIs, Generating lyrics after getting successful
+// response from all 3 APIs(intro, body and ending)
+
+//A. Intro generator that will fetch details of intro of song
+const introGenerator = lyrics => {
+  let error = false;
+  let introString;
+  return new Promise((resolve, reject) => {
+    if (!error) {
+      introString = lyrics.intro.replace(/ {2}/g, "<br>");
+      introString += "<br/><br/>"
+      resolve(introString);
+    } else {
+      reject("Error: There was an error fetching the intro of song");
+    }
+  });
+};
+
+//B. Chorus Generator that will fetch details of chorus
+const bodyGenerator = lyrics => {
+  let error = false;
+  let bodyString = "";
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < lyrics.choruses.length; i++) {
+      bodyString += lyrics.choruses[i].chorus.replace(/ {6}/g, "<br/>");
+      bodyString += "<br/><br/>";
+      bodyString += refrainAdder(lyrics.refrain, lyrics.refrainRepeat);
+    }
+    if (!error) {
+      resolve(bodyString);
+    } else {
+      reject("Error: There was an error while fetching the body of song");
+    }
+  });
+};
+
+//c. end Generator will fetch the end of song
+const endGenerator = lyrics => {
+  let error = false;
+  let endString = "";
+  return new Promise((resolve, reject) => {
+    if (!error) {
+      endString += lyrics.ending;
+      resolve(endString);
+    } else {
+      reject("Error: There was an error while fetching ending of song");
+    }
+  });
+};
+
+//Building songs.
+const songBuilder = async lyrics => {
+  let song = "";
+  song += await introGenerator(lyrics);
+  song += await bodyGenerator(lyrics);
+  song += await endGenerator(lyrics);
+  return song;
+};
+
+songBuilder(lyrics).then(song => document.body.innerHTML = song).catch(err=> document.body.innerHTML = err);
